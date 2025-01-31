@@ -82,9 +82,6 @@ class Response:
         try:
             if not hasattr(self, '_vector'):
                 raise ValueError("Vector not initialized. Call create_embeddings first.")
-            for message in self.__chat_history:
-                self.__memory.add_message(message["role"], message["content"])
-            
             self.__retriever = self._vector.as_retriever()
 
             history_aware_retriever = create_history_aware_retriever(self.llm,self.__retriever,self.__contextual_q_prompt)

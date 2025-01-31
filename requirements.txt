@@ -21,3 +21,6 @@ arxiv
 wikipedia
 mysql-connector-python
 SQLAlchemy
+flask
+flask-session
+langchain_astradb

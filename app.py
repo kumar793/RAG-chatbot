@@ -14,6 +14,8 @@ app.config['SESSION_TYPE'] = 'filesystem'
 Session(app)
 logging.info("Session started")
 store = {}
+r = data_ingestion.Response()
+conversational_rag_chain = None
 
 def get_session_history(session_id: str) -> BaseChatMessageHistory:
     global store
@@ -37,42 +39,52 @@ def index():
 @app.route("/create_document", methods=["GET", "POST"])
 def upload_documents():
     try:
-       
+        global r
         session.uploaded_files = request.files.getlist("file")
         session['session_id'] = request.form.get("session_id", "default_session")
-        
         if session.uploaded_files:
-            session.r = data_ingestion.Response()
             for uploaded_file in session.uploaded_files:
                 temppdf = './temp.pdf'
                 with open(temppdf, 'wb') as file:
                     file.write(uploaded_file.read())
-                session.r.create_embeddings(temppdf)
-            logging.info("Document uploaded successfully and create embeddings.")
+                r.create_embeddings(temppdf)
+            logging.info("Document uploaded successfully and embeddings created.")
             session.modified = True 
             return redirect("/")
+        else:
+            logging.warning("No files uploaded.")
+            return "No files uploaded", 400
     except Exception as e:
-        logging.info(f"Error: {e} at document upload.")
+        logging.error(f"Error: {e} at document upload.")
         raise CustomException(e, sys)
+
+
     
-@app.route("/create_rag", methods=["POST","GET"])
+@app.route("/create_rag", methods=["GET"])
 def create_rag():
-    session.conversational_rag_chain = RunnableWithMessageHistory(
-                session.r.create_response(),
-                get_session_history,
-                input_messages_key="input",
-                history_messages_key="chat_history",
-                output_messages_key="answer"
-            )
-    session.modified = True 
-    
-    logging.info("Rag chain created successfully.",session.conversational_rag_chain,session.SECRET_KEY,session.SESSION_TYPE)
-    return redirect("/")
+    global r
+    global conversational_rag_chain
+    try:
+        logging.info("getting conversational rag chain")
+        conversational_rag_chain = RunnableWithMessageHistory(
+            r.create_response(),
+            get_session_history,
+            input_messages_key="input",
+            history_messages_key="chat_history",
+            output_messages_key="answer"
+        )
+        session.modified = True 
+        logging.info("Rag chain created successfully.")
+        return redirect("/")
+    except Exception as e:
+        logging.error(f"Error: {e} at creating RAG chain")
+        raise CustomException(e, sys)
+
+
 @app.route("/chat", methods=["POST"])
-
-
 def DocumentQA():
     try:
+        global conversational_rag_chain
         user_input = request.json.get('message')
         logging.info("received user input")
         if not user_input:
@@ -87,7 +99,7 @@ def DocumentQA():
         session_history = get_session_history(session_id)
         logging.info("Session history created successfully.")
         logging.info("Chat response generation started.")
-        response = session.conversational_rag_chain.invoke(
+        response = conversational_rag_chain.invoke(
             {"input": user_input},
             config={"configurable": {"session_id": session_id}}
         )

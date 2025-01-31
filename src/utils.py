@@ -13,14 +13,14 @@ ASTRA_DB_APPLICATION_TOKEN = os.getenv("ASTRA_DB_APPLICATION_TOKEN")
 
 
 class load_document:
-    def vector_store(self,document_path):
+    def vector_store(self,document_path,session_id):
         try:
             self.__documents = PyPDFLoader(document_path).load()
             self.__text_splitter = RecursiveCharacterTextSplitter(chunk_size = 300, chunk_overlap = 20 ).split_documents(self.__documents)
             logging.info("Document loaded and split into chunks")
             self.__embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
             self.__vector_store = AstraDBVectorStore(
-                                collection_name="demo",
+                                collection_name=session_id,
                                 embedding=self.__embeddings,
                                 api_endpoint=ASTRA_DB_API_ENDPOINT,
                                 token=ASTRA_DB_APPLICATION_TOKEN)

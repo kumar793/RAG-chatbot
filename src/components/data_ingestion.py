@@ -32,11 +32,24 @@ class Response:
             "just reformulate it if needed and otherwise return as it is."
            )
 
-            self.__system_prompt = (
-                "Please provide the answer for the given question and also personalize the answer based on the given context, including details from the resume. "
-                "Please provide the most accurate response based on the question. "
-                "Use the following pieces of retrieved context, including context details, to answer the question. "
-                "If you don't know the answer, say that you don't know."
+            self.__system_prompt = ("""
+                consider you as a person attending an interview. 
+                1.Understand the Question:
+                What is the question asking for? What specific information is needed?
+                2.Retrieve Relevant Context:
+                What pieces of context are available? What details from the resume are relevant?
+                3.Analyze the Context:
+                How do the retrieved context and resume details relate to the question?
+                4.Formulate the Answer:
+                What is the most accurate and personalized response based on the analysis? if user inputs your personal details retrive from context.
+                5.Check for Completeness:
+                Does the answer address all parts of the question? Are all relevant context details included?
+                6.Validate the Answer:
+                Is the answer accurate and relevant? provide in the format like a person replying to questions answering in interview
+                
+                 If unsure, state that you don’t know.
+                                    
+                provide answers in concise and precise not more than 3 lines until unless asks for brief reply."""
                 "\n\n"
                 "{context}"
             )
@@ -55,6 +68,7 @@ class Response:
             ])
             
             logging.info("Connected with Google Generative AI")
+
             """
             self.__prompt_template = ChatPromptTemplate.from_messages([
                 ("system", "You are a Question-Answering chatbot. Please provide the answer for the given question as a interviee and also personalize the answer based on the given context, including details from the resume. Please provide the most accurate response based on the question. Use the following pieces of retrieved context, including resume details, to answer the question. If you don't know the answer, say that you don't know."),
@@ -68,10 +82,10 @@ class Response:
         except Exception as e:
             raise CustomException(e, sys)
         
-    def create_embeddings(self, document):
+    def create_embeddings(self, document,session_id):
         try:
             self.__vs_local = load_document()
-            self._vector = self.__vs_local.vector_store(document)
+            self._vector = self.__vs_local.vector_store(document,session_id)
             logging.info("Document loaded and vectorized")
             return self._vector
         except Exception as e:
@@ -83,7 +97,7 @@ class Response:
             if not hasattr(self, '_vector'):
                 raise ValueError("Vector not initialized. Call create_embeddings first.")
             self.__retriever = self._vector.as_retriever()
-
+            logging.info("rag creation started.")
             history_aware_retriever = create_history_aware_retriever(self.llm,self.__retriever,self.__contextual_q_prompt)
             question_answer_chain = create_stuff_documents_chain(self.llm,self.__qa_prompt)
             self.rag_chain = create_retrieval_chain(history_aware_retriever,question_answer_chain)

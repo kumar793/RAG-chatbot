@@ -3,158 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Custom Search Engine with Langchain</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        .chat-container {
-            width: 600px;
-            height: 80vh;
-            background-color: #ffffff;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            border-radius: 10px;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-        .chat-header {
-            background-color: #075e54;
-            color: #ffffff;
-            padding: 10px;
-            text-align: center;
-        }
-        .chat-messages {
-            flex: 1;
-            padding: 10px;
-            overflow-y: auto;
-        }
-        .chat-message {
-            margin-bottom: 10px;
-            padding: 10px;
-            border-radius: 10px;
-            max-width: 80%;
-        }
-        .chat-message.user {
-            background-color: #dcf8c6;
-            align-self: flex-end;
-        }
-        .chat-message.assistant {
-            background-color: #ffffff;
-            border: 1px solid #ddd;
-            align-self: flex-start;
-        }
-        .chat-input-container {
-            display: flex;
-            border-top: 1px solid #ddd;
-        }
-        .chat-input {
-            flex: 1;
-            padding: 10px;
-            border: none;
-            outline: none;
-        }
-        .chat-send-button {
-            background-color: #075e54;
-            color: #ffffff;
-            border: none;
-            padding: 10px;
-            cursor: pointer;
-        }
-        .chat-send-button:disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
-        }
-        .chat-image {
-            max-width: 100%;
-            border-radius: 10px;
-            margin-top: 10px;
-        }
-    </style>
+    <title>Interview Demo</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-    <div>
-    <form method="POST"  action = "/create_document" enctype="multipart/form-data">
-        <input type="file" name="file" required>
-        <input type="text" name="session_id" placeholder="Enter session ID">
-        <button type="submit">Submit</button>
-    </form>
-    <form  action = "/create_rag">
-        <button type="submit">Generate rag</button>
-    </form>
-</div>
+    <nav>
+        <form method="POST" action="/create_document" enctype="multipart/form-data">
+            <input type="file" name="file" required>
+            <input type="text" name="session_id" placeholder="Enter session ID">
+            <button type="submit">Submit</button>
+        </form>
+    </nav>
     <div class="chat-container">
         <div class="chat-header">
-            <h1>My Custom Search Engine with Langchain</h1>
+            <h1>Interview Demo</h1>
         </div>
         <div class="chat-messages" id="chatbox">
-            {% for msg in messages %}
-                <div class="chat-message {{ msg.role }}">
-                    <strong>{{ msg.role }}:</strong> {{ msg.content }}
-                    {% if msg.image %}
-                        <img src="{{ msg.image }}" class="chat-image">
-                    {% endif %}
-                </div>
-            {% endfor %}
+            <!-- Messages will be dynamically inserted here -->
         </div>
         <div class="chat-input-container">
             <label for="user_input">Go Ahead and ask any question:</label>
-            <input type="text" id="user_input" name="user_input" value="{{ user_input }}">
+            <input type="text" id="user_input" name="user_input">
             <button class="chat-send-button" id="sendButton" onclick="sendMessage()">Send</button>
         </div>
-
     </div>
-    <script>
-        async function sendMessage() {
-            const userInput = document.getElementById('user_input').value;
-            const sendButton = document.getElementById('sendButton');
-            const chatbox = document.getElementById('chatbox');
-    
-            // Disable input and button, show fetching data message
-            document.getElementById('user_input').disabled = true;
-            sendButton.disabled = true;
-            chatbox.innerHTML += `<div class="chat-message assistant"><strong>assistant:</strong> Fetching data...</div>`;
-            chatbox.scrollTop = chatbox.scrollHeight; // Scroll to the bottom
-    
-            try {
-                const response = await fetch('/chat', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ message: userInput })
-                });
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                const data = await response.json();
-                chatbox.innerHTML = '';
-                data.messages.forEach(msg => {
-                    let messageHtml = `<div class="chat-message ${msg.role}"><strong>${msg.role}:</strong> ${msg.content}`;
-                    if (msg.image) {
-                        messageHtml += `<img src="${msg.image}" class="chat-image">`;
-                    }
-                    messageHtml += `</div>`;
-                    chatbox.innerHTML += messageHtml;
-                });
-                document.getElementById('user_input').value = '';
-                chatbox.scrollTop = chatbox.scrollHeight; // Scroll to the bottom
-            } catch (error) {
-                console.error('There was a problem with the fetch operation:', error);
-                chatbox.innerHTML += `<div class="chat-message assistant"><strong>assistant:</strong> Error fetching data. Please try again.</div>`;
-            } finally {
-                // Re-enable input and button
-                document.getElementById('user_input').disabled = false;
-                sendButton.disabled = false;
-            }
-        }
-    </script>
+    <script src="{{ url_for('static', filename='scripts.js') }}"></script>
 </body>
 </html>

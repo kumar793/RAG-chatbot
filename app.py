@@ -11,10 +11,11 @@ import sys
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'getint'
 app.config['SESSION_TYPE'] = 'filesystem'
+app.config['SESSION_PERMANENT'] = True
 Session(app)
 logging.info("Session started")
 store = {}
-r = data_ingestion.Response()
+
 conversational_rag_chain = None
 
 def get_session_history(session_id: str) -> BaseChatMessageHistory:
@@ -39,33 +40,23 @@ def index():
 @app.route("/create_document", methods=["GET", "POST"])
 def upload_documents():
     try:
-        global r
+        global conversational_rag_chain
+        r = data_ingestion.Response()
         session.uploaded_files = request.files.getlist("file")
-        session['session_id'] = request.form.get("session_id", "default_session")
+        session_id = request.form.get("session_id")
+        
         if session.uploaded_files:
             for uploaded_file in session.uploaded_files:
                 temppdf = './temp.pdf'
                 with open(temppdf, 'wb') as file:
                     file.write(uploaded_file.read())
-                r.create_embeddings(temppdf)
+                r.create_embeddings(temppdf,session_id)
             logging.info("Document uploaded successfully and embeddings created.")
-            session.modified = True 
-            return redirect("/")
+            logging.info("getting conversational rag chain")
         else:
             logging.warning("No files uploaded.")
             return "No files uploaded", 400
-    except Exception as e:
-        logging.error(f"Error: {e} at document upload.")
-        raise CustomException(e, sys)
-
-
-    
-@app.route("/create_rag", methods=["GET"])
-def create_rag():
-    global r
-    global conversational_rag_chain
-    try:
-        logging.info("getting conversational rag chain")
+        
         conversational_rag_chain = RunnableWithMessageHistory(
             r.create_response(),
             get_session_history,
@@ -76,9 +67,12 @@ def create_rag():
         session.modified = True 
         logging.info("Rag chain created successfully.")
         return redirect("/")
+        
     except Exception as e:
-        logging.error(f"Error: {e} at creating RAG chain")
+        logging.error(f"Error: {e} at document upload.")
         raise CustomException(e, sys)
+
+
 
 
 @app.route("/chat", methods=["POST"])

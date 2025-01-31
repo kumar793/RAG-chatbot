@@ -40,5 +40,4 @@ This project is a web application built with Flask and GenAI, designed to help u
 
 3. **Upload a document and start practicing interview questions!**
 
-## Project Structure
 
